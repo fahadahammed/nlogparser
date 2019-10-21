@@ -2,20 +2,20 @@
 nLogParser is a tool which parse your nginx servers logs in a well sorted way.
 
 ## How to Use?
-
+You have to take out the nlogparser file from dist folder and put it in ~/bin folder.
 ### Convert Log File
 ```bash
-python3 nlogparser.py filename.log convert
+nlogparser filename.log convert
 ```
 
 ### Read Log File
 ```bash
-python3 nlogparser.py filename.log read --head 5
+nlogparser filename.log read --head 5
 ```
 
 ## Help
 ```bash
-usage: nlogparser.py [-h] [-v] file {convert,reader} ...
+usage: nlogparser [-h] [-v] file {convert,reader} ...
 
 nLogParser is a tool which parse your nginx servers logs in a well sorted way.
 
