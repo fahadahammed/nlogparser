@@ -8,13 +8,13 @@
 #
 #  Copyright (c) 2019. All rights reserved.
 import argparse
-import urllib.parse
-import os
-import sys
 import datetime
 import gzip
+import os
 import shutil
 import time
+import urllib.parse
+from multiprocessing import Process
 
 _info = {
     "version": 1,
@@ -42,7 +42,7 @@ def url_decode(file, original_file_name=None):
         decoded_list = []
         for i in opened_file:
             decoded_piece = urllib.parse.unquote(i)
-            if len(decoded_list) >= 50000:
+            if len(decoded_list) == 1000:
                 save_decoded_file(list_of_pieces=decoded_list, file=file)
                 decoded_list.clear()
                 decoded_list.append(decoded_piece)
@@ -53,7 +53,7 @@ def url_decode(file, original_file_name=None):
     if original_file_name:
         return {
             "file_to_operate": original_file_name,
-            "decoded_file": "decoded_"+file
+            "decoded_file": "decoded_" + file
         }
     else:
         return {
@@ -99,7 +99,6 @@ def file_operation(file):
     return decoded_file_info
 
 
-
 class LOG_Reader:
     def __init__(self):
         self.default_format = '$remote_addr - $remote_user [$time_local] ''"$request" $status $body_bytes_sent ''"$http_referer" "$http_user_agent"'
@@ -137,7 +136,8 @@ def execute():
     )
 
     # Global
-    parser.add_argument('-v', '-V', '--version', action='version', version='%(prog)s {version}'.format(version=_info["version"]))
+    parser.add_argument('-v', '-V', '--version', action='version',
+                        version='%(prog)s {version}'.format(version=_info["version"]))
     parser.add_argument('file', metavar='file', nargs=1, help='file with location')
 
     # Create Subparser
@@ -149,7 +149,9 @@ def execute():
 
     # Create the Parser for READ the file
     parser_reader = subparsers.add_parser(name="reader")
-    # parser_reader.add_argument('--config-format-file', nargs=1, help="Comma seperated file", required=True)
+    group_pr = parser_reader.add_mutually_exclusive_group(required=True)
+    group_pr.add_argument('--tail', nargs=1, default=5, help="How many lines from the end of the file?")
+    group_pr.add_argument('--head', nargs=1, default=5, help="How many lines from the head of the file?")
     parser_reader.set_defaults(parser="reader")
 
     # Arguments
@@ -159,17 +161,23 @@ def execute():
         if args.parser == "convert":
             return file_operation(file=file)
         elif args.parser == "reader":
-            with open(file, "r") as opened_file:
-                # lines = ['157.55.39.53 - - [13/Oct/2019:06:26:06 +0600] "GET /book/88005/the-indian-contract-act--13th-ed- HTTP/1.1" 301 194 "-" "Mozilla/5.0 (compatible; bingbot/2.0; +http://www.bing.com/bingbot.htm)"']
+            with open(file_operation(file=file)["decoded_file"], "r") as opened_file:
                 lines = opened_file
-                print(LOG_Reader().read_log(lines=lines))
-            return "Reader..."
+                # print(args.head, type(args.head), args.tail, type(args.tail))
+                readable_data = LOG_Reader().read_log(lines=lines)
+                if type(args.tail) is list:
+                    tail = int(args.tail[0])
+                    return readable_data[::-1][0:tail]
+                if type(args.head) is list:
+                    head = int(args.head[0])
+                    return readable_data[0:head]
+
     except AttributeError as e:
         parser.print_usage()
 
 
 if __name__ == "__main__":
-    to_execute =  execute()
+    to_execute = execute()
     if to_execute:
         print(to_execute)
     else:
