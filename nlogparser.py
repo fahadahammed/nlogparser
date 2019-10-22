@@ -17,7 +17,7 @@ import urllib.parse
 from multiprocessing import Process
 
 _info = {
-    "version": 1,
+    "version": 2,
     "changes": [
         "Convert encoded log files to decoded ones. "
         "Extract GZ files and decode. "
@@ -86,6 +86,7 @@ def file_operation(file):
         file_name = file_name["new_file_name"]
     else:
         file_name = file
+        original_file_name = None
 
     # Decode File
     started_at = time.time()
@@ -105,26 +106,29 @@ class LOG_Reader:
         self.to_be_format = [
             "IP", "DATETIME", "TIMEZONE", "REQUEST", "URL", "HTTP", "STATUS", "BODY_BYTES_SENT", "REFERER", "USER_AGENT"
         ]
-        self.kv_log = []
+
 
     def read_log(self, lines):
+        kv_log = []
         for i in lines:
-            line_splitited = i.split(" ")
-            new_spl = []
-            new_spl.append(str(line_splitited[0]))
-            new_spl.append(str(line_splitited[3]).replace("[", ""))
-            new_spl.append(str(line_splitited[4]).replace("]", ""))
-            new_spl.append(str(line_splitited[5]).replace('"', ''))
-            new_spl.append(str(line_splitited[6]).replace('"', ''))
-            new_spl.append(str(line_splitited[7]).replace('"', ''))
-            new_spl.append(str(line_splitited[8]))
-            new_spl.append(str(line_splitited[9]))
-            new_spl.append(str(line_splitited[10]).replace('"', ''))
-            new_spl.append(str(line_splitited[11::]).replace('"', ''))
-            single_kv_log = dict(zip(self.to_be_format, new_spl))
-            self.kv_log.append(single_kv_log)
-        if self.kv_log:
-            return self.kv_log
+            line_splitted = i.split(" ")
+            if len(line_splitted) > 1:
+                new_spl = []
+                print("line_splitted", line_splitted)
+                new_spl.append(str(line_splitted[0]))
+                new_spl.append(str(line_splitted[3]).replace("[", ""))
+                new_spl.append(str(line_splitted[4]).replace("]", ""))
+                new_spl.append(str(line_splitted[5]).replace('"', ''))
+                new_spl.append(str(line_splitted[6]).replace('"', ''))
+                new_spl.append(str(line_splitted[7]).replace('"', ''))
+                new_spl.append(str(line_splitted[8]))
+                new_spl.append(str(line_splitted[9]))
+                new_spl.append(str(line_splitted[10]).replace('"', ''))
+                new_spl.append(str(line_splitted[11::]).replace('"', ''))
+                single_kv_log = dict(zip(self.to_be_format, new_spl))
+                kv_log.append(single_kv_log)
+        if kv_log:
+            return kv_log
         else:
             return False
 
