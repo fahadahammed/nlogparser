@@ -90,6 +90,7 @@ def file_operation(file):
 
     # Decode File
     started_at = time.time()
+
     decoded_file_info = url_decode(file=file_name, original_file_name=original_file_name)
     finished_at = time.time()
     time_took = finished_at - started_at
@@ -104,27 +105,37 @@ class LOG_Reader:
     def __init__(self):
         self.default_format = '$remote_addr - $remote_user [$time_local] ''"$request" $status $body_bytes_sent ''"$http_referer" "$http_user_agent"'
         self.to_be_format = [
-            "IP", "DATETIME", "TIMEZONE", "REQUEST", "URL", "HTTP", "STATUS", "BODY_BYTES_SENT", "REFERER", "USER_AGENT"
+            "IP", "DATETIME", "TIMEZONE", "REQUEST", "URL", "HTTP", "STATUS", "REFERRER"
         ]
 
-
-    def read_log(self, lines):
+    def read_log(self, lines, new_format=None):
         kv_log = []
         for i in lines:
             line_splitted = i.split(" ")
             if len(line_splitted) > 1:
                 new_spl = []
-                print("line_splitted", line_splitted)
-                new_spl.append(str(line_splitted[0]))
-                new_spl.append(str(line_splitted[3]).replace("[", ""))
-                new_spl.append(str(line_splitted[4]).replace("]", ""))
-                new_spl.append(str(line_splitted[5]).replace('"', ''))
-                new_spl.append(str(line_splitted[6]).replace('"', ''))
-                new_spl.append(str(line_splitted[7]).replace('"', ''))
-                new_spl.append(str(line_splitted[8]))
-                new_spl.append(str(line_splitted[9]))
-                new_spl.append(str(line_splitted[10]).replace('"', ''))
-                new_spl.append(str(line_splitted[11::]).replace('"', ''))
+                try:
+                    if not new_format:
+                        new_spl.append(str(line_splitted[0]))
+                        new_spl.append(str(line_splitted[3]).replace("[", ""))
+                        new_spl.append(str(line_splitted[4]).replace("]", ""))
+                        new_spl.append(str(line_splitted[5]).replace('"', ''))
+                        new_spl.append(str(line_splitted[6]).replace('"', ''))
+                        new_spl.append(str(line_splitted[7]).replace('"', ''))
+                        new_spl.append(str(line_splitted[8]))
+                        new_spl.append(str(line_splitted[10]))
+                    else:
+                        line_splitted = i.split(" ")[0:13]
+                        new_spl.append(str(line_splitted[2]))
+                        new_spl.append(str(line_splitted[4]).replace("[", ""))
+                        new_spl.append(str(line_splitted[5]).replace("]", ""))
+                        new_spl.append(str(line_splitted[7]).replace('"', ''))
+                        new_spl.append(str(line_splitted[8]))
+                        new_spl.append(str(line_splitted[9]).replace('"', ''))
+                        new_spl.append(str(line_splitted[10]))
+                        new_spl.append(str(line_splitted[12]).replace('"', ''))
+                except IndexError as e:
+                    pass
                 single_kv_log = dict(zip(self.to_be_format, new_spl))
                 kv_log.append(single_kv_log)
         if kv_log:
@@ -153,6 +164,7 @@ def execute():
 
     # Create the Parser for READ the file
     parser_reader = subparsers.add_parser(name="reader")
+    parser_reader.add_argument('--site', nargs=1, default=None, help="Is the log in changed format?")
     group_pr = parser_reader.add_mutually_exclusive_group(required=True)
     group_pr.add_argument('--tail', nargs=1, default=5, help="How many lines from the end of the file?")
     group_pr.add_argument('--head', nargs=1, default=5, help="How many lines from the head of the file?")
@@ -167,8 +179,10 @@ def execute():
         elif args.parser == "reader":
             with open(file_operation(file=file)["decoded_file"], "r") as opened_file:
                 lines = opened_file
-                # print(args.head, type(args.head), args.tail, type(args.tail))
-                readable_data = LOG_Reader().read_log(lines=lines)
+                if not args.site:
+                    readable_data = LOG_Reader().read_log(lines=lines)
+                else:
+                    readable_data = LOG_Reader().read_log(lines=lines, new_format=args.site[0])
                 if type(args.tail) is list:
                     tail = int(args.tail[0])
                     return readable_data[::-1][0:tail]
